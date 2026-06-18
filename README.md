@@ -277,25 +277,7 @@ Pipeline em **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.
 
 ---
 
-## Screenshots
 
-> Adicione aqui as capturas de tela da aplicacao.
-
-| Tela | Imagem |
-|------|--------|
-| Login | _[inserir screenshot]_ |
-| Cadastro | _[inserir screenshot]_ |
-| Dashboard - Usuarios | _[inserir screenshot]_ |
-| Dashboard - Repositorios | _[inserir screenshot]_ |
-
----
-
-## Possiveis melhorias futuras
-- Testes e2e do backend contra um PostgreSQL real (ex.: Testcontainers) em vez de fakes em memoria.
-- Cookies httpOnly para o refresh token (em vez de `localStorage`), reduzindo a superficie de XSS.
-- Deploy (ex.: backend no Render/Railway, frontend na Vercel).
-
----
 
 ## Licenca
 MIT

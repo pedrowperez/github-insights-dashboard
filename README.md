@@ -70,6 +70,28 @@ O backend nunca expoe a API do GitHub diretamente ao cliente: todas as chamadas 
 
 ---
 
+## Visao do produto
+
+Esta secao responde diretamente as perguntas propostas no desafio.
+
+### Como interpreto um "dashboard de dados do GitHub"?
+Mais do que um proxy que repassa respostas da API, entendo o dashboard como uma ferramenta de **exploracao e leitura rapida** de duas entidades centrais do GitHub: **pessoas (devs/orgs)** e **projetos (repositorios)**. Em vez de mostrar JSON cru, o objetivo e responder perguntas em poucos segundos: _"que tecnologias esse dev domina?"_, _"qual o alcance do trabalho dele?"_, _"quais projetos lideram um tema e como se comparam?"_. Por isso optei por **duas abas** com propositos distintos, mas mesma linguagem visual.
+
+### Quais informacoes considero relevantes?
+- **Perfil do usuario:** identidade (avatar, nome, bio, empresa, localizacao) + alcance social (seguidores). Sao o contexto humano.
+- **Metricas agregadas do usuario:** somatorio de **stars** e **forks** de todos os repositorios, total de repos publicos e analisados. Traduzem "reputacao e volume" em numeros unicos e comparaveis.
+- **Distribuicao de linguagens:** revela a stack real do dev a partir dos repositorios (nao apenas o que ele declara).
+- **Top repositorios:** os projetos mais relevantes (por stars), que contam a "historia" principal daquele perfil.
+- **Comparativo de repositorios (busca):** stars, forks e issues abertas lado a lado, permitindo avaliar **popularidade vs. manutencao vs. carga de trabalho** entre projetos de um mesmo tema.
+
+### Como apresento de forma util e visual?
+- **Hierarquia de leitura:** cards de KPI no topo (numero grande), depois graficos, depois listas com link para o GitHub — do resumo ao detalhe.
+- **Grafico certo para cada dado:** **pizza/donut** para proporcao (linguagens) e **barras** para comparacao (stars/forks/issues entre repos).
+- **Cor com significado:** paleta consistente onde cada metrica tem sempre a mesma cor (stars, forks, issues), reduzindo carga cognitiva.
+- **Resposta rapida e tolerante a erro:** chips de sugestao para comecar sem digitar, skeleton loaders durante o carregamento, estados vazios claros e mensagens amigaveis (incluindo aviso especifico de rate limit do GitHub).
+
+---
+
 ## Arquitetura e decisoes tecnicas
 
 ```

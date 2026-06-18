@@ -1,58 +1,123 @@
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
+import { AlertTriangle, Inbox, Loader2, type LucideProps } from 'lucide-react';
 
-export function Spinner() {
+export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="flex justify-center py-12">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+    <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-400">
+      <Loader2 className="h-7 w-7 animate-spin text-brand" />
+      {label && <span className="text-sm">{label}</span>}
     </div>
+  );
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={`skeleton animate-shimmer rounded-lg ${className ?? 'h-4 w-full'}`}
+    />
   );
 }
 
 export function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-      {message}
+    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-fade-in">
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+      <span>{message}</span>
     </div>
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
+export function EmptyState({
+  title,
+  message,
+  icon: Icon = Inbox,
+}: {
+  title?: string;
+  message: string;
+  icon?: ComponentType<LucideProps>;
+}) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
-      {message}
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center animate-fade-in">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+        <Icon className="h-6 w-6" />
+      </div>
+      {title && <p className="font-semibold text-slate-700">{title}</p>}
+      <p className="mt-1 max-w-sm text-sm text-slate-500">{message}</p>
     </div>
   );
 }
+
+const ACCENTS: Record<string, string> = {
+  brand: 'bg-brand-50 text-brand-600',
+  amber: 'bg-amber-50 text-[#c08a2e]',
+  emerald: 'bg-emerald-50 text-emerald-600',
+  rose: 'bg-[#f6eceb] text-[#b5544a]',
+  slate: 'bg-slate-100 text-slate-600',
+};
 
 export function StatCard({
   label,
   value,
-  accent,
+  icon: Icon,
+  accent = 'slate',
 }: {
   label: string;
   value: ReactNode;
-  accent?: string;
+  icon?: ComponentType<LucideProps>;
+  accent?: keyof typeof ACCENTS | string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className={`mt-1 text-2xl font-bold ${accent ?? 'text-slate-900'}`}>
-        {value}
-      </p>
+    <div className="surface flex items-center gap-3 p-4 transition hover:shadow-glow">
+      {Icon && (
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+            ACCENTS[accent] ?? ACCENTS.slate
+          }`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-400">
+          {label}
+        </p>
+        <p className="text-xl font-bold text-slate-900">{value}</p>
+      </div>
     </div>
   );
 }
 
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`surface p-5 ${className ?? ''}`}>{children}</div>;
+}
+
+export function SectionTitle({
+  icon: Icon,
+  children,
+}: {
+  icon?: ComponentType<LucideProps>;
+  children: ReactNode;
+}) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${className ?? ''}`}>
+    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+      {Icon && <Icon className="h-4 w-4 text-brand" />}
       {children}
-    </div>
+    </h3>
   );
 }
 
 export function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return new Intl.NumberFormat('pt-BR').format(n);
+}
+
+export function formatFull(n: number): string {
   return new Intl.NumberFormat('pt-BR').format(n);
 }

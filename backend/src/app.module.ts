@@ -24,7 +24,10 @@ import { User } from './users/entities/user.entity';
         url: config.get<string>('DATABASE_URL'),
         entities: [User],
         synchronize: true,
-        ssl: { rejectUnauthorized: false },
+        ssl:
+          config.get<string>('DB_SSL', 'true') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
       }),
     }),
     AuthModule,

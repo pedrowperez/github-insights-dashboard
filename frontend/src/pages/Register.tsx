@@ -1,7 +1,10 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Loader2, Lock, Mail, User, UserPlus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { extractErrorMessage } from '../api/client';
+import { AuthLayout } from '../components/AuthLayout';
 
 export function Register() {
   const { register, user } = useAuth();
@@ -9,101 +12,150 @@ export function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const passwordStrength = getStrength(password);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await register(name, email, password);
+      toast.success('Conta criada com sucesso!');
       navigate('/dashboard');
     } catch (err) {
-      setError(extractErrorMessage(err, 'Nao foi possivel cadastrar.'));
+      toast.error(extractErrorMessage(err, 'Nao foi possivel cadastrar.'));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-brand-dark p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">Criar conta</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Cadastre-se para explorar dados do GitHub
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Nome
-            </label>
+    <AuthLayout
+      title="Criar conta"
+      subtitle="Cadastre-se para explorar dados do GitHub"
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            Nome
+          </label>
+          <div className="relative">
+            <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               required
               minLength={2}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+              className="input-field pl-10"
               placeholder="Seu nome"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              E-mail
-            </label>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            E-mail
+          </label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+              className="input-field pl-10"
               placeholder="voce@email.com"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Senha
-            </label>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            Senha
+          </label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+              className="input-field pl-10 pr-10"
               placeholder="Minimo 6 caracteres"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+              aria-label="Mostrar senha"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-brand py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60"
-          >
-            {loading ? 'Cadastrando...' : 'Cadastrar'}
-          </button>
-        </form>
+          {password.length > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex h-1.5 flex-1 gap-1">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-full flex-1 rounded-full transition ${
+                      i < passwordStrength.level
+                        ? passwordStrength.color
+                        : 'bg-slate-200'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-slate-500">
+                {passwordStrength.label}
+              </span>
+            </div>
+          )}
+        </div>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          Ja tem conta?{' '}
-          <Link to="/login" className="font-semibold text-brand hover:underline">
-            Entrar
-          </Link>
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <UserPlus className="h-4 w-4" />
+          )}
+          {loading ? 'Cadastrando...' : 'Cadastrar'}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-slate-500">
+        Ja tem conta?{' '}
+        <Link to="/login" className="font-semibold text-brand hover:underline">
+          Entrar
+        </Link>
+      </p>
+    </AuthLayout>
   );
+}
+
+function getStrength(password: string): {
+  level: number;
+  label: string;
+  color: string;
+} {
+  if (password.length === 0) return { level: 0, label: '', color: '' };
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+  if (/[0-9]/.test(password) && /[a-zA-Z]/.test(password)) score++;
+  if (score <= 1) return { level: 1, label: 'Fraca', color: 'bg-rose-400' };
+  if (score === 2) return { level: 2, label: 'Media', color: 'bg-amber-400' };
+  return { level: 3, label: 'Forte', color: 'bg-emerald-500' };
 }

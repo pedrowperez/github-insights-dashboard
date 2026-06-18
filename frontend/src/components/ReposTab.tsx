@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -24,6 +24,7 @@ import {
   Card,
   EmptyState,
   ErrorBox,
+  Pager,
   SectionTitle,
   Skeleton,
   formatNumber,
@@ -57,6 +58,7 @@ export function ReposTab() {
   const [term, setTerm] = useState('');
   const [language, setLanguage] = useState('');
   const [sort, setSort] = useState('stars');
+  const [page, setPage] = useState(1);
   const [params, setParams] = useState<{
     q: string;
     language: string;
@@ -64,24 +66,31 @@ export function ReposTab() {
   } | null>(null);
 
   const reposQuery = useQuery({
-    queryKey: ['repos-search', params],
+    queryKey: ['repos-search', params, page],
     enabled: !!params,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data } = await api.get<RepoSearchResult>('/github/repos/search', {
         params: {
           q: params!.q,
           language: params!.language || undefined,
           sort: params!.sort,
+          page,
         },
       });
       return data;
     },
   });
 
+  function startSearch(next: { q: string; language: string; sort: string }) {
+    setPage(1);
+    setParams(next);
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!term.trim()) return;
-    setParams({ q: term.trim(), language, sort });
+    startSearch({ q: term.trim(), language, sort });
   }
 
   const chartData =
@@ -140,7 +149,7 @@ export function ReposTab() {
               type="button"
               onClick={() => {
                 setTerm(s);
-                setParams({ q: s, language, sort });
+                startSearch({ q: s, language, sort });
               }}
               className="chip"
             >
@@ -158,7 +167,7 @@ export function ReposTab() {
         />
       )}
 
-      {reposQuery.isFetching && (
+      {reposQuery.isLoading && (
         <div className="space-y-6">
           <Skeleton className="h-[340px] rounded-2xl" />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -172,16 +181,20 @@ export function ReposTab() {
       {reposQuery.isError && (
         <ErrorBox message={extractErrorMessage(reposQuery.error)} />
       )}
-      {!reposQuery.isFetching &&
+      {!reposQuery.isLoading &&
         reposQuery.data &&
         reposQuery.data.items.length === 0 && (
           <EmptyState message="Nenhum repositorio encontrado." icon={Search} />
         )}
 
-      {!reposQuery.isFetching &&
+      {!reposQuery.isLoading &&
         reposQuery.data &&
         reposQuery.data.items.length > 0 && (
-          <div className="space-y-6 animate-fade-in">
+          <div
+            className={`space-y-6 animate-fade-in transition-opacity ${
+              reposQuery.isFetching ? 'opacity-60' : ''
+            }`}
+          >
             <Card>
               <div className="mb-3 flex items-center justify-between">
                 <SectionTitle icon={BarChart3}>
@@ -265,6 +278,13 @@ export function ReposTab() {
                 </a>
               ))}
             </div>
+
+            <Pager
+              page={reposQuery.data.page}
+              totalPages={reposQuery.data.totalPages}
+              onChange={setPage}
+              isLoading={reposQuery.isFetching}
+            />
           </div>
         )}
     </div>

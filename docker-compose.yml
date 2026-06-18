@@ -23,7 +23,8 @@ services:
       DATABASE_URL: postgres://app:app@db:5432/github_dashboard
       DB_SSL: "false"
       JWT_SECRET: troque-este-segredo-em-producao
-      JWT_EXPIRES_IN: 1h
+      JWT_EXPIRES_IN: 15m
+      REFRESH_EXPIRES_DAYS: "7"
       CLIENT_URL: http://localhost:8080
       PORT: 3000
       # GITHUB_TOKEN: opcional para aumentar o rate limit

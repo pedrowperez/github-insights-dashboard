@@ -27,12 +27,13 @@ export class GithubController {
 
   @ApiOperation({ summary: 'Busca usuarios do GitHub' })
   @ApiQuery({ name: 'q', example: 'torvalds' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
   @Get('users/search')
-  searchUsers(@Query('q') q: string) {
+  searchUsers(@Query('q') q: string, @Query('page') page?: string) {
     if (!q || !q.trim()) {
       throw new BadRequestException('Informe um termo de busca.');
     }
-    return this.githubService.searchUsers(q.trim());
+    return this.githubService.searchUsers(q.trim(), parsePage(page));
   }
 
   @ApiOperation({
@@ -51,11 +52,13 @@ export class GithubController {
     required: false,
     enum: ['stars', 'forks', 'updated', 'help-wanted-issues'],
   })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
   @Get('repos/search')
   searchRepos(
     @Query('q') q: string,
     @Query('language') language?: string,
     @Query('sort') sort?: string,
+    @Query('page') page?: string,
   ) {
     if (!q || !q.trim()) {
       throw new BadRequestException('Informe um termo de busca.');
@@ -66,6 +69,7 @@ export class GithubController {
       q.trim(),
       language?.trim() || undefined,
       safeSort,
+      parsePage(page),
     );
   }
 
@@ -74,4 +78,11 @@ export class GithubController {
   getRepo(@Param('owner') owner: string, @Param('repo') repo: string) {
     return this.githubService.getRepository(owner, repo);
   }
+}
+
+function parsePage(value?: string): number {
+  const parsed = Number.parseInt(value ?? '1', 10);
+  if (Number.isNaN(parsed) || parsed < 1) return 1;
+  // GitHub Search API: limite de 1000 resultados (com perPage 12 -> ~83 paginas)
+  return Math.min(parsed, 84);
 }

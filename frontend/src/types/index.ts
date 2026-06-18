@@ -6,7 +6,15 @@ export interface AuthUser {
 
 export interface AuthResponse {
   accessToken: string;
+  refreshToken: string;
   user: AuthUser;
+}
+
+export interface Paginated {
+  totalCount: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
 }
 
 export interface UserSearchItem {
@@ -17,8 +25,7 @@ export interface UserSearchItem {
   type: string;
 }
 
-export interface UserSearchResult {
-  totalCount: number;
+export interface UserSearchResult extends Paginated {
   items: UserSearchItem[];
 }
 
@@ -77,7 +84,6 @@ export interface RepoSearchItem {
   updatedAt: string;
 }
 
-export interface RepoSearchResult {
-  totalCount: number;
+export interface RepoSearchResult extends Paginated {
   items: RepoSearchItem[];
 }

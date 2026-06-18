@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GithubModule } from './github/github.module';
 import { User } from './users/entities/user.entity';
+import { RefreshToken } from './auth/entities/refresh-token.entity';
 
 @Module({
   imports: [
@@ -22,8 +24,12 @@ import { User } from './users/entities/user.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [User],
-        synchronize: true,
+        entities: [User, RefreshToken],
+        migrations: [join(__dirname, 'migrations', '*.{js,ts}')],
+        // Em vez de sincronizar o schema automaticamente, usamos migrations
+        // versionadas que sao executadas no boot.
+        synchronize: false,
+        migrationsRun: true,
         ssl:
           config.get<string>('DB_SSL', 'true') === 'true'
             ? { rejectUnauthorized: false }

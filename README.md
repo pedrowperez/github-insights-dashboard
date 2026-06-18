@@ -27,19 +27,20 @@ Aplicacao web full stack com **sistema de autenticacao** e um **dashboard proteg
 | **Tailwind CSS** | Estilizacao utilitaria, rapida e responsiva, com design system centralizado (tokens de cor, tipografia e componentes). |
 | **Axios** | Cliente HTTP com interceptors para injecao automatica do token JWT e tratamento global de 401. |
 | **Vitest + Testing Library** | Testes de unidade e de componentes do frontend, com ambiente jsdom. |
+| **Playwright** | Testes e2e de navegador (smoke do fluxo de autenticacao e rotas protegidas). |
 
 ### Backend
 | Tecnologia | Justificativa |
 |------------|---------------|
 | **NestJS (Node.js + TypeScript)** | Arquitetura modular, opinada e escalavel (modules, controllers, services, guards), facilitando organizacao e testes. |
-| **TypeORM + PostgreSQL** | ORM maduro integrado ao Nest; PostgreSQL e um banco relacional robusto, hospedado gratuitamente na nuvem (Neon/Supabase). |
-| **Passport + JWT** | Estrategia de autenticacao stateless padrao de mercado, com guard reutilizavel para proteger rotas. |
+| **TypeORM + PostgreSQL** | ORM maduro integrado ao Nest; PostgreSQL e um banco relacional robusto, hospedado gratuitamente na nuvem (Neon/Supabase). Schema versionado via **migrations**. |
+| **Passport + JWT (access + refresh token)** | Autenticacao stateless com **access token** de vida curta e **refresh token** rotacionado e revogavel no servidor (logout real). |
 | **bcryptjs** | Hash seguro de senhas (implementacao pura em JS, sem dependencia de build nativo). |
 | **@nestjs/axios** | Proxy server-side para a API do GitHub, centralizando tratamento de erros, rate limit e cache. |
 | **@nestjs/cache-manager** | Cache em memoria das respostas do GitHub, reduzindo chamadas e atenuando o rate limit. |
 | **Helmet + Throttler + class-validator** | Camadas de seguranca: headers HTTP seguros, rate limiting e validacao/sanitizacao de entrada. |
 | **@nestjs/swagger** | Documentacao interativa da API (OpenAPI) disponivel em `/api/docs`. |
-| **Jest** | Testes de unidade dos services e controllers do backend. |
+| **Jest + Supertest** | Testes de unidade (services/controllers) e testes **e2e** do fluxo HTTP (auth + proxy). |
 
 ### Infra
 | Tecnologia | Justificativa |
@@ -66,7 +67,9 @@ A aplicacao responde a pergunta _"como interpretar um dashboard de dados do GitH
 - **Grafico de barras** comparando stars, forks e issues abertas dos principais resultados.
 - Grade de cards com descricao, linguagem e metricas, com link direto para o GitHub.
 
-O backend nunca expoe a API do GitHub diretamente ao cliente: todas as chamadas passam pelo NestJS, que **agrega**, **trata erros** (404, rate limit, indisponibilidade) e **cacheia** os resultados. As rotas de dados sao protegidas por JWT, exigindo login.
+Ambas as buscas sao **paginadas** (navegacao por paginas, respeitando o limite de 1000 resultados da Search API do GitHub).
+
+O backend nunca expoe a API do GitHub diretamente ao cliente: todas as chamadas passam pelo NestJS, que **agrega**, **trata erros** (404, rate limit, indisponibilidade) e **cacheia** os resultados. As rotas de dados sao protegidas por JWT, exigindo login. A sessao permanece ativa de forma transparente: ao expirar o access token, o cliente usa o **refresh token** automaticamente (com retry da requisicao).
 
 ---
 
@@ -100,20 +103,25 @@ Mais do que um proxy que repassa respostas da API, entendo o dashboard como uma 
 |-- docker-compose.yml       # Postgres + backend + frontend
 |-- backend/                 # API NestJS
 |   |-- Dockerfile
+|   |-- test/               # Testes e2e (Supertest) com fakes em memoria
 |   `-- src/
-|       |-- auth/            # Registro, login, JWT, guard, strategy, DTOs (+ .spec)
+|       |-- auth/            # Login, JWT, refresh token (entity + endpoints), guard, DTOs (+ .spec)
 |       |-- users/           # Entidade User + repositorio (TypeORM)
-|       |-- github/          # Proxy + agregacao da API do GitHub (protegido) (+ .spec)
+|       |-- github/          # Proxy + agregacao da API do GitHub (protegido, paginado) (+ .spec)
+|       |-- migrations/      # Migrations versionadas (schema)
 |       |-- common/filters/  # Filtro global de excecoes
+|       |-- data-source.ts   # DataSource do TypeORM (CLI de migrations)
 |       |-- app.module.ts
 |       `-- main.ts          # Bootstrap + Swagger (/api/docs)
 `-- frontend/                # SPA React + Vite
     |-- Dockerfile           # Build + Nginx
     |-- nginx.conf
+    |-- playwright.config.ts # Config dos testes e2e
+    |-- e2e/                 # Testes e2e (Playwright)
     `-- src/
-        |-- api/             # Cliente axios + interceptors (+ .test)
+        |-- api/             # Cliente axios + interceptors (refresh automatico) (+ .test)
         |-- context/         # AuthContext (estado de autenticacao)
-        |-- components/      # ProtectedRoute, abas, UI, graficos (+ .test)
+        |-- components/      # ProtectedRoute, abas, UI, graficos, paginacao (+ .test)
         |-- pages/           # Login, Register, Dashboard (+ .test)
         |-- test/            # Setup do Vitest
         `-- types/           # Tipos compartilhados
@@ -137,28 +145,32 @@ flowchart LR
 
   Auth -->|"POST /auth/register | /auth/login"| Ctrl
   Ctrl -->|bcrypt + persiste| DB
-  Ctrl -->|access_token JWT| Auth
-  Dash -->|Bearer token| Guard
+  Ctrl -->|access + refresh token| Auth
+  Auth -.->|"POST /auth/refresh (no 401)"| Ctrl
+  Dash -->|Bearer access token| Guard
   Guard --> GH
   GH -->|HTTP + cache| GitHub
 ```
 
 ### Decisoes principais
 - **Backend como proxy do GitHub:** centraliza tratamento de erros, rate limit e cache, e evita expor logica/segredos ao cliente.
-- **JWT stateless:** simples de escalar; o token e guardado no `localStorage` e injetado via interceptor do axios. Um handler global trata respostas `401` derrubando a sessao.
-- **`synchronize: true` no TypeORM:** acelera o setup para o contexto do teste (cria as tabelas automaticamente). Em producao real, o recomendado seria usar migrations versionadas.
+- **Access + refresh token:** o **access token** (JWT, vida curta ~15min) e injetado via interceptor do axios. Ao receber `401`, o cliente troca o **refresh token** por um novo par (rotacao) e refaz a requisicao automaticamente (single-flight, sem loops). O refresh token e guardado **hasheado (sha256)** no banco, podendo ser **revogado** — o `logout` o invalida no servidor.
+- **Migrations versionadas:** `synchronize` desativado; o schema e criado/evoluido por migrations em `src/migrations`, executadas automaticamente no boot (`migrationsRun`). Scripts: `npm run migration:run | migration:revert | migration:generate`.
 - **Cache em memoria das respostas do GitHub** (TTL ~60s) para reduzir chamadas repetidas e o risco de atingir o rate limit (60 req/h sem token).
+- **Paginacao:** as buscas aceitam `page` e retornam `totalPages`/`totalCount`, respeitando o teto de 1000 resultados da Search API.
 - **Validacao e seguranca:** `ValidationPipe` global com whitelist, `helmet`, CORS restrito ao frontend e rate limiting com `@nestjs/throttler`.
 
 ### Endpoints principais
 | Metodo | Rota | Protegida | Descricao |
 |--------|------|-----------|-----------|
-| POST | `/api/auth/register` | Nao | Cria conta e retorna token |
-| POST | `/api/auth/login` | Nao | Autentica e retorna token |
+| POST | `/api/auth/register` | Nao | Cria conta e retorna access + refresh token |
+| POST | `/api/auth/login` | Nao | Autentica e retorna access + refresh token |
+| POST | `/api/auth/refresh` | Nao | Gera novo par de tokens (rotaciona o refresh) |
+| POST | `/api/auth/logout` | Nao | Revoga o refresh token (logout no servidor) |
 | GET | `/api/auth/me` | Sim | Dados do usuario logado |
-| GET | `/api/github/users/search?q=` | Sim | Busca usuarios |
+| GET | `/api/github/users/search?q=&page=` | Sim | Busca usuarios (paginada) |
 | GET | `/api/github/users/:username` | Sim | Perfil + agregacoes (linguagens, stars, top repos) |
-| GET | `/api/github/repos/search?q=&language=&sort=` | Sim | Busca repositorios |
+| GET | `/api/github/repos/search?q=&language=&sort=&page=` | Sim | Busca repositorios (paginada) |
 | GET | `/api/github/repos/:owner/:repo` | Sim | Detalhe de um repositorio |
 
 A documentacao interativa (Swagger / OpenAPI) fica disponivel em **`/api/docs`** com o backend rodando.
@@ -199,7 +211,8 @@ Edite o arquivo `backend/.env` e preencha:
 DATABASE_URL=postgresql://usuario:senha@host:5432/dbname?sslmode=require
 DB_SSL=true           # 'true' para Neon/Supabase; 'false' para Postgres local
 JWT_SECRET=uma-string-aleatoria-bem-longa
-JWT_EXPIRES_IN=1h
+JWT_EXPIRES_IN=15m        # validade do access token
+REFRESH_EXPIRES_DAYS=7    # validade do refresh token (dias)
 CLIENT_URL=http://localhost:5173
 GITHUB_TOKEN=        # opcional, aumenta o rate limit para 5000 req/h
 PORT=3000
@@ -208,7 +221,7 @@ Inicie a API:
 ```bash
 npm run start:dev
 ```
-A API sobe em `http://localhost:3000/api` (Swagger em `/api/docs`) e cria as tabelas automaticamente.
+A API sobe em `http://localhost:3000/api` (Swagger em `/api/docs`). As **migrations rodam automaticamente no boot**, criando o schema; para rodar manualmente use `npm run migration:run`.
 
 #### 2. Frontend
 Em outro terminal:
@@ -233,21 +246,27 @@ O frontend sobe em `http://localhost:5173`.
 ```bash
 # Backend (Jest) - services e controllers
 cd backend && npm test
+# Backend e2e (Supertest) - fluxo HTTP completo
+cd backend && npm run test:e2e
 
 # Frontend (Vitest + Testing Library) - utils e componentes
 cd frontend && npm test
+# Frontend e2e (Playwright) - smoke de navegador
+cd frontend && npm run test:e2e:install && npm run test:e2e
 ```
 
 Cobertura: `npm run test:cov` em cada projeto.
 
-- **Backend:** testes de unidade do `AuthService` (registro/login, hash de senha, conflitos e credenciais invalidas), do `GithubService` (mapeamento e agregacao de dados, tratamento de erro 404) e do `AuthController`.
-- **Frontend:** testes de utilitarios (`formatNumber`, `extractErrorMessage`) e de componentes (`StatCard`, `EmptyState`, pagina de `Login`).
+- **Backend (unidade):** `AuthService` (registro/login, hash de senha, conflitos, credenciais invalidas, **refresh com rotacao** e **logout/revogacao**), `GithubService` (mapeamento/agregacao e erro 404) e `AuthController`.
+- **Backend (e2e):** registro -> login -> rota protegida (401 sem token) -> refresh com rotacao -> logout, alem do proxy do GitHub. Roda sobre **fakes em memoria** (o ambiente nao compila drivers nativos de SQLite), exercitando todo o pipeline HTTP (validacao, guard, rotas, status).
+- **Frontend (unidade):** utilitarios (`formatNumber`, `extractErrorMessage`) e componentes (`StatCard`, `EmptyState`, pagina de `Login`).
+- **Frontend (e2e):** Playwright valida render do login, redirecionamento de rota protegida e navegacao login -> cadastro.
 
 ## CI/CD
 
 Pipeline em **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) executado a cada push/PR na `main`, com tres jobs:
-1. **Backend** - `npm ci`, `npm run build`, `npm test`.
-2. **Frontend** - `npm ci`, `npm test`, `npm run build`.
+1. **Backend** - `npm ci`, `npm run build`, `npm test`, `npm run test:e2e`.
+2. **Frontend** - `npm ci`, `npm test`, `npm run build` e e2e com Playwright (`npx playwright install` + `npm run test:e2e`).
 3. **Docker** - build das imagens do backend e do frontend para validar os Dockerfiles.
 
 ## Docker
@@ -272,10 +291,8 @@ Pipeline em **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.
 ---
 
 ## Possiveis melhorias futuras
-- Testes e2e (ex.: Supertest com banco de testes, Playwright no frontend).
-- Migrations versionadas (em vez de `synchronize: true`).
-- Refresh token e logout no servidor.
-- Paginacao nos resultados de busca.
+- Testes e2e do backend contra um PostgreSQL real (ex.: Testcontainers) em vez de fakes em memoria.
+- Cookies httpOnly para o refresh token (em vez de `localStorage`), reduzindo a superficie de XSS.
 - Deploy (ex.: backend no Render/Railway, frontend na Vercel).
 
 ---

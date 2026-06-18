@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -30,6 +30,7 @@ import {
   Card,
   EmptyState,
   ErrorBox,
+  Pager,
   SectionTitle,
   Skeleton,
   StatCard,
@@ -43,14 +44,16 @@ const SUGGESTIONS = ['torvalds', 'gaearon', 'sindresorhus', 'antfu', 'tj'];
 export function UsersTab() {
   const [term, setTerm] = useState('');
   const [submitted, setSubmitted] = useState('');
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
 
   const searchQuery = useQuery({
-    queryKey: ['users-search', submitted],
+    queryKey: ['users-search', submitted, page],
     enabled: submitted.length > 0,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data } = await api.get<UserSearchResult>('/github/users/search', {
-        params: { q: submitted },
+        params: { q: submitted, page },
       });
       return data;
     },
@@ -70,6 +73,7 @@ export function UsersTab() {
   function runSearch(value: string) {
     if (!value.trim()) return;
     setSelected(null);
+    setPage(1);
     setSubmitted(value.trim());
   }
 
@@ -116,7 +120,7 @@ export function UsersTab() {
 
       <div className="grid gap-6 lg:grid-cols-[330px_1fr]">
         <div className="space-y-3">
-          {searchQuery.isFetching && (
+          {searchQuery.isLoading && (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="surface flex items-center gap-3 p-2.5">
@@ -135,10 +139,14 @@ export function UsersTab() {
           {searchQuery.data && searchQuery.data.items.length === 0 && (
             <EmptyState message="Nenhum usuario encontrado." icon={UserSearch} />
           )}
-          {!searchQuery.isFetching &&
+          {!searchQuery.isLoading &&
             searchQuery.data &&
             searchQuery.data.items.length > 0 && (
-              <>
+              <div
+                className={`space-y-3 transition-opacity ${
+                  searchQuery.isFetching ? 'opacity-60' : ''
+                }`}
+              >
                 <p className="px-1 text-xs text-slate-400">
                   {formatNumber(searchQuery.data.totalCount)} resultados
                 </p>
@@ -166,7 +174,13 @@ export function UsersTab() {
                     <ExternalLink className="h-4 w-4 text-slate-300" />
                   </button>
                 ))}
-              </>
+                <Pager
+                  page={searchQuery.data.page}
+                  totalPages={searchQuery.data.totalPages}
+                  onChange={setPage}
+                  isLoading={searchQuery.isFetching}
+                />
+              </div>
             )}
           {!submitted && (
             <EmptyState

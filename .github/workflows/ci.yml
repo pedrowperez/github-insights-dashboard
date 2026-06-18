@@ -23,6 +23,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - run: npm run test:e2e
 
   frontend:
     name: Frontend (build + testes)
@@ -40,6 +41,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
 
   docker:
     name: Build das imagens Docker

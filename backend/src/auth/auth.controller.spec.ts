@@ -7,6 +7,8 @@ describe('AuthController', () => {
   const authService = {
     register: jest.fn(),
     login: jest.fn(),
+    refresh: jest.fn(),
+    logout: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -35,6 +37,18 @@ describe('AuthController', () => {
     await controller.login(dto);
 
     expect(authService.login).toHaveBeenCalledWith(dto);
+  });
+
+  it('delega o refresh para o AuthService', async () => {
+    authService.refresh.mockResolvedValue({ accessToken: 't' });
+    await controller.refresh({ refreshToken: 'abc' });
+    expect(authService.refresh).toHaveBeenCalledWith('abc');
+  });
+
+  it('delega o logout para o AuthService', async () => {
+    authService.logout.mockResolvedValue({ success: true });
+    await controller.logout({ refreshToken: 'abc' });
+    expect(authService.logout).toHaveBeenCalledWith('abc');
   });
 
   it('retorna o usuario autenticado em /me', () => {

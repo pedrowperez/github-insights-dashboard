@@ -12,6 +12,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // testes de unidade/componente apenas em src; e2e fica com o Playwright
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['node_modules', 'dist', 'e2e'],
   },
   build: {
     rollupOptions: {

@@ -1,5 +1,12 @@
 import type { ComponentType, ReactNode } from 'react';
-import { AlertTriangle, Inbox, Loader2, type LucideProps } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Loader2,
+  type LucideProps,
+} from 'lucide-react';
 
 export function Spinner({ label }: { label?: string }) {
   return (
@@ -109,6 +116,45 @@ export function SectionTitle({
       {Icon && <Icon className="h-4 w-4 text-brand" />}
       {children}
     </h3>
+  );
+}
+
+export function Pager({
+  page,
+  totalPages,
+  onChange,
+  isLoading,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+  isLoading?: boolean;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-3 pt-1">
+      <button
+        type="button"
+        onClick={() => onChange(page - 1)}
+        disabled={page <= 1 || isLoading}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-brand-300 hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Pagina anterior"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <span className="text-xs font-medium text-slate-500">
+        Pagina {page} de {totalPages}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(page + 1)}
+        disabled={page >= totalPages || isLoading}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-brand-300 hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Proxima pagina"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 

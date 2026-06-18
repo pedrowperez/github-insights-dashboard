@@ -1,9 +1,12 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -13,6 +16,14 @@ describe('AuthService', () => {
     findById: jest.Mock;
   };
   let jwtService: { sign: jest.Mock };
+  let config: { get: jest.Mock };
+  let refreshTokens: {
+    create: jest.Mock;
+    save: jest.Mock;
+    findOne: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
 
   const buildUser = async (): Promise<User> => ({
     id: 'user-1',
@@ -31,9 +42,21 @@ describe('AuthService', () => {
     jwtService = {
       sign: jest.fn().mockReturnValue('signed-token'),
     };
+    config = {
+      get: jest.fn().mockReturnValue('7'),
+    };
+    refreshTokens = {
+      create: jest.fn((x) => x),
+      save: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
+    };
     service = new AuthService(
       usersService as unknown as UsersService,
       jwtService as unknown as JwtService,
+      config as unknown as ConfigService,
+      refreshTokens as unknown as Repository<RefreshToken>,
     );
   });
 
@@ -53,7 +76,9 @@ describe('AuthService', () => {
       });
 
       expect(result.accessToken).toBe('signed-token');
+      expect(result.refreshToken).toEqual(expect.any(String));
       expect(result.user.email).toBe('pedro@email.com');
+      expect(refreshTokens.save).toHaveBeenCalled();
       // a senha deve ser persistida como hash, nunca em texto puro
       const createArg = usersService.create!.mock.calls[0][0];
       expect(createArg.passwordHash).not.toBe('senha123');
@@ -103,6 +128,57 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'pedro@email.com', password: 'errada' }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
+  describe('refresh', () => {
+    it('rotaciona o token quando valido e nao expirado', async () => {
+      refreshTokens.findOne.mockResolvedValue({
+        id: 't1',
+        userId: 'user-1',
+        tokenHash: 'hash',
+        revoked: false,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      usersService.findById!.mockResolvedValue(await buildUser());
+
+      const result = await service.refresh('raw-token');
+
+      expect(result.accessToken).toBe('signed-token');
+      expect(refreshTokens.save).toHaveBeenCalledWith(
+        expect.objectContaining({ revoked: true }),
+      );
+    });
+
+    it('lanca UnauthorizedException para token revogado', async () => {
+      refreshTokens.findOne.mockResolvedValue({
+        revoked: true,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await expect(service.refresh('raw-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+
+    it('lanca UnauthorizedException para token inexistente', async () => {
+      refreshTokens.findOne.mockResolvedValue(null);
+
+      await expect(service.refresh('raw-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('logout', () => {
+    it('revoga o refresh token informado', async () => {
+      const result = await service.logout('raw-token');
+
+      expect(result).toEqual({ success: true });
+      expect(refreshTokens.update).toHaveBeenCalledWith(
+        { tokenHash: expect.any(String) },
+        { revoked: true },
+      );
     });
   });
 });

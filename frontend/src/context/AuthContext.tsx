@@ -7,9 +7,10 @@ import {
 } from 'react';
 import {
   api,
-  clearToken,
+  clearTokens,
+  getRefreshToken,
   getToken,
-  setToken,
+  setTokens,
   setUnauthorizedHandler,
 } from '../api/client';
 import type { AuthResponse, AuthUser } from '../types';
@@ -19,7 +20,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api
       .get<AuthUser>('/auth/me')
       .then((res) => setUser(res.data))
-      .catch(() => clearToken())
+      .catch(() => clearTokens())
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    setToken(data.accessToken);
+    setTokens(data.accessToken, data.refreshToken);
     setUser(data.user);
   }
 
@@ -59,12 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    setToken(data.accessToken);
+    setTokens(data.accessToken, data.refreshToken);
     setUser(data.user);
   }
 
-  function logout() {
-    clearToken();
+  async function logout() {
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      // revoga o refresh token no servidor; ignora falhas de rede
+      await api.post('/auth/logout', { refreshToken }).catch(() => undefined);
+    }
+    clearTokens();
     setUser(null);
   }
 

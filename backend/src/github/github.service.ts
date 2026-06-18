@@ -80,13 +80,18 @@ export class GithubService {
     );
   }
 
-  async searchUsers(query: string, perPage = 12) {
+  async searchUsers(query: string, page = 1, perPage = 12) {
     const data = await this.get<{ total_count: number; items: any[] }>(
       '/search/users',
-      { q: query, per_page: perPage },
+      { q: query, page, per_page: perPage },
     );
+    // A busca do GitHub limita o acesso a 1000 resultados.
+    const totalCount = Math.min(data.total_count, 1000);
     return {
-      totalCount: data.total_count,
+      totalCount,
+      page,
+      perPage,
+      totalPages: Math.ceil(totalCount / perPage),
       items: data.items.map((u) => ({
         id: u.id,
         login: u.login,
@@ -166,15 +171,20 @@ export class GithubService {
     query: string,
     language?: string,
     sort = 'stars',
-    perPage = 15,
+    page = 1,
+    perPage = 12,
   ) {
     const q = language ? `${query} language:${language}` : query;
     const data = await this.get<{ total_count: number; items: any[] }>(
       '/search/repositories',
-      { q, sort, order: 'desc', per_page: perPage },
+      { q, sort, order: 'desc', page, per_page: perPage },
     );
+    const totalCount = Math.min(data.total_count, 1000);
     return {
-      totalCount: data.total_count,
+      totalCount,
+      page,
+      perPage,
+      totalPages: Math.ceil(totalCount / perPage),
       items: data.items.map((repo) => ({
         id: repo.id,
         fullName: repo.full_name,

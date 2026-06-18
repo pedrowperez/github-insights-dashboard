@@ -3,6 +3,7 @@
 Aplicacao web full stack com **sistema de autenticacao** e um **dashboard protegido** que consome e visualiza dados da API publica do GitHub. O usuario pode se cadastrar, fazer login e explorar dados de **usuarios** e **repositorios** do GitHub por meio de graficos e cards interativos.
 
 > Teste Tecnico - Desenvolvedor Full Stack | Tendencias Consultoria
+<img width="1916" height="956" alt="image" src="https://github.com/user-attachments/assets/ea17a837-bbfc-4c7f-803f-eb49064f352b" />
 
 ---
 

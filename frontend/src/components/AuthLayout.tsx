@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BarChart3, GitBranch, Search, ShieldCheck } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 const FEATURES = [
   { icon: Search, text: 'Busque usuarios e repositorios em tempo real' },
@@ -33,7 +34,7 @@ export function AuthLayout({
         </div>
 
         <div className="relative text-white">
-          <h2 className="max-w-md text-3xl font-extrabold leading-tight">
+          <h2 className="max-w-md text-3xl font-extrabold leading-tight text-white">
             Dados do GitHub transformados em insights visuais.
           </h2>
           <p className="mt-3 max-w-md text-brand-100">
@@ -44,10 +45,10 @@ export function AuthLayout({
           <ul className="mt-8 space-y-4">
             {FEATURES.map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-3 text-brand-50">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
                   <Icon className="h-4 w-4" />
                 </span>
-                <span className="text-sm">{text}</span>
+                <span className="text-base font-semibold">{text}</span>
               </li>
             ))}
           </ul>
@@ -59,19 +60,26 @@ export function AuthLayout({
       </div>
 
       {/* Painel do formulario */}
-      <div className="flex items-center justify-center bg-slate-50 p-6">
+      <div className="relative flex items-center justify-center bg-slate-50 p-6 dark:bg-night-900">
+        <div className="absolute right-5 top-5">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md animate-slide-up">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand text-white">
               <GitBranch className="h-5 w-5" />
             </div>
-            <span className="font-display text-lg font-bold text-slate-900">
+            <span className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
               GitHub Insights
             </span>
           </div>
 
-          <h1 className="text-2xl font-extrabold text-slate-900">{title}</h1>
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
+            {title}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {subtitle}
+          </p>
 
           <div className="mt-8">{children}</div>
         </div>

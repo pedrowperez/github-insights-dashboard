@@ -36,7 +36,7 @@ export function Login() {
     <AuthLayout title="Entrar" subtitle="Acesse seu dashboard de insights do GitHub">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
             E-mail
           </label>
           <div className="relative">
@@ -53,7 +53,7 @@ export function Login() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Senha
           </label>
           <div className="relative">
@@ -91,7 +91,7 @@ export function Login() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
         Nao tem conta?{' '}
         <Link to="/register" className="font-semibold text-brand hover:underline">
           Cadastre-se

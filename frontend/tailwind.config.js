@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -35,6 +36,16 @@ export default {
           100: '#f6f6f6',
           200: '#eeecec',
           300: '#e2e0e0',
+        },
+        // Neutros escuros (dark theme) - tom levemente esverdeado p/ harmonizar
+        // com o verde-petroleo da marca.
+        night: {
+          950: '#080d0c',
+          900: '#0e1413',
+          800: '#161d1c',
+          700: '#1f2827',
+          600: '#2a3433',
+          500: '#3a4544',
         },
         // Neutro institucional (sobrescreve o slate azulado padrao do Tailwind)
         slate: {

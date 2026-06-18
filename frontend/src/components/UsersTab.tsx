@@ -37,7 +37,8 @@ import {
   formatNumber,
 } from './ui';
 import { ChartTooltip } from './ChartTooltip';
-import { AXIS_TICK, CHART_COLORS, CURSOR_FILL, SERIES } from './chartTheme';
+import { CHART_COLORS, SERIES } from './chartTheme';
+import { useChartColors } from './chartTheme';
 
 const SUGGESTIONS = ['torvalds', 'gaearon', 'sindresorhus', 'antfu', 'tj'];
 
@@ -101,7 +102,9 @@ export function UsersTab() {
           </button>
         </form>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400">Sugestoes:</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500">
+            Sugestoes:
+          </span>
           {SUGGESTIONS.map((s) => (
             <button
               key={s}
@@ -147,7 +150,7 @@ export function UsersTab() {
                   searchQuery.isFetching ? 'opacity-60' : ''
                 }`}
               >
-                <p className="px-1 text-xs text-slate-400">
+                <p className="px-1 text-xs text-slate-400 dark:text-slate-500">
                   {formatNumber(searchQuery.data.totalCount)} resultados
                 </p>
                 {searchQuery.data.items.map((u) => (
@@ -156,22 +159,24 @@ export function UsersTab() {
                     onClick={() => setSelected(u.login)}
                     className={`flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition ${
                       selected === u.login
-                        ? 'border-brand-300 bg-brand-50 shadow-glow'
-                        : 'border-slate-200/70 bg-white hover:border-brand-200 hover:bg-slate-50'
+                        ? 'border-brand-300 bg-brand-50 shadow-glow dark:border-brand-400/50 dark:bg-brand-500/15'
+                        : 'border-slate-200/70 bg-white hover:border-brand-200 hover:bg-slate-50 dark:border-white/10 dark:bg-night-800 dark:hover:border-brand-400/40 dark:hover:bg-night-700'
                     }`}
                   >
                     <img
                       src={u.avatarUrl}
                       alt={u.login}
-                      className="h-10 w-10 rounded-full ring-2 ring-white"
+                      className="h-10 w-10 rounded-full ring-2 ring-white dark:ring-night-700"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">
+                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {u.login}
                       </p>
-                      <p className="text-xs text-slate-400">{u.type}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        {u.type}
+                      </p>
                     </div>
-                    <ExternalLink className="h-4 w-4 text-slate-300" />
+                    <ExternalLink className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                   </button>
                 ))}
                 <Pager
@@ -241,6 +246,7 @@ function ProfileSkeleton() {
 function ProfileDetails({ data }: { data: UserProfileResponse }) {
   const { profile, stats, languages, topRepos } = data;
   const langChart = languages.slice(0, 8);
+  const { axisTick, cursorFill } = useChartColors();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -251,7 +257,7 @@ function ProfileDetails({ data }: { data: UserProfileResponse }) {
             <img
               src={profile.avatarUrl}
               alt={profile.login}
-              className="h-20 w-20 rounded-2xl ring-4 ring-white"
+              className="h-20 w-20 rounded-2xl ring-4 ring-white dark:ring-night-800"
             />
             <div className="flex-1 pt-2 sm:pt-10">
               <div className="flex flex-wrap items-center gap-2">
@@ -259,7 +265,7 @@ function ProfileDetails({ data }: { data: UserProfileResponse }) {
                   href={profile.htmlUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-lg font-bold text-slate-900 hover:text-brand"
+                  className="text-lg font-bold text-slate-900 hover:text-brand dark:text-slate-100 dark:hover:text-brand-300"
                 >
                   {profile.name ?? profile.login}
                 </a>
@@ -267,16 +273,18 @@ function ProfileDetails({ data }: { data: UserProfileResponse }) {
                   href={profile.htmlUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-brand"
+                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-brand dark:text-slate-500 dark:hover:text-brand-300"
                 >
                   @{profile.login}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
               {profile.bio && (
-                <p className="mt-2 text-sm text-slate-600">{profile.bio}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  {profile.bio}
+                </p>
               )}
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
                 {profile.company && (
                   <span className="inline-flex items-center gap-1">
                     <Building2 className="h-3.5 w-3.5" />
@@ -366,7 +374,7 @@ function ProfileDetails({ data }: { data: UserProfileResponse }) {
               <BarChart data={topRepos} barGap={4}>
                 <XAxis
                   dataKey="name"
-                  tick={AXIS_TICK}
+                  tick={axisTick}
                   interval={0}
                   angle={-20}
                   textAnchor="end"
@@ -374,8 +382,8 @@ function ProfileDetails({ data }: { data: UserProfileResponse }) {
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: CURSOR_FILL }} />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: cursorFill }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="stars" name="Stars" fill={SERIES.stars} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="forks" name="Forks" fill={SERIES.forks} radius={[4, 4, 0, 0]} />
@@ -394,30 +402,30 @@ function ProfileDetails({ data }: { data: UserProfileResponse }) {
               href={repo.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="group rounded-xl border border-slate-200/70 p-3.5 transition hover:border-brand-300 hover:bg-brand-50/50 hover:shadow-glow"
+              className="group rounded-xl border border-slate-200/70 p-3.5 transition hover:border-brand-300 hover:bg-brand-50/50 hover:shadow-glow dark:border-white/10 dark:hover:border-brand-400/40 dark:hover:bg-brand-500/10"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="truncate font-semibold text-slate-900 group-hover:text-brand">
+                <p className="truncate font-semibold text-slate-900 group-hover:text-brand dark:text-slate-100 dark:group-hover:text-brand-300">
                   {repo.name}
                 </p>
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-brand" />
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-brand dark:text-slate-600 dark:group-hover:text-brand-300" />
               </div>
               {repo.description && (
-                <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
                   {repo.description}
                 </p>
               )}
               <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs">
                 {repo.language && (
-                  <span className="font-medium text-slate-600">
+                  <span className="font-medium text-slate-600 dark:text-slate-300">
                     {repo.language}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 text-amber-600">
+                <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                   <Star className="h-3.5 w-3.5" />
                   {formatNumber(repo.stars)}
                 </span>
-                <span className="inline-flex items-center gap-1 text-brand">
+                <span className="inline-flex items-center gap-1 text-brand dark:text-brand-300">
                   <GitFork className="h-3.5 w-3.5" />
                   {formatNumber(repo.forks)}
                 </span>

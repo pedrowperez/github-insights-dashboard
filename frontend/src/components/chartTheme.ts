@@ -22,3 +22,16 @@ export const SERIES = {
 export const AXIS_TICK = { fontSize: 11, fill: '#73757a' } as const;
 export const GRID_STROKE = '#e4e3e3';
 export const CURSOR_FILL = '#f1f0f0';
+
+import { useTheme } from '../context/ThemeContext';
+
+// Cores dos eixos/grade sensiveis ao tema (claro/escuro).
+export function useChartColors() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  return {
+    axisTick: { fontSize: 11, fill: isDark ? '#8a9694' : '#73757a' },
+    gridStroke: isDark ? '#2a3433' : '#e4e3e3',
+    cursorFill: isDark ? 'rgba(255,255,255,0.05)' : '#f1f0f0',
+  };
+}

@@ -42,7 +42,7 @@ export function Register() {
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Nome
           </label>
           <div className="relative">
@@ -60,7 +60,7 @@ export function Register() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
             E-mail
           </label>
           <div className="relative">
@@ -77,7 +77,7 @@ export function Register() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Senha
           </label>
           <div className="relative">
@@ -113,12 +113,12 @@ export function Register() {
                     className={`h-full flex-1 rounded-full transition ${
                       i < passwordStrength.level
                         ? passwordStrength.color
-                        : 'bg-slate-200'
+                        : 'bg-slate-200 dark:bg-night-600'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {passwordStrength.label}
               </span>
             </div>
@@ -135,7 +135,7 @@ export function Register() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
         Ja tem conta?{' '}
         <Link to="/login" className="font-semibold text-brand hover:underline">
           Entrar

@@ -3,7 +3,46 @@
 Aplicacao web full stack com **sistema de autenticacao** e um **dashboard protegido** que consome e visualiza dados da API publica do GitHub. O usuario pode se cadastrar, fazer login e explorar dados de **usuarios** e **repositorios** do GitHub por meio de graficos e cards interativos.
 
 > Teste Tecnico - Desenvolvedor Full Stack | Tendencias Consultoria
+
+[![CI](https://github.com/pedrowperez/github-insights-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrowperez/github-insights-dashboard/actions/workflows/ci.yml)
+[![Frontend Netlify](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://githubinsightsdashboard.netlify.app)
+[![API Render](https://img.shields.io/badge/API-Render-46E3B7?logo=render&logoColor=white)](https://github-insights-api.onrender.com/api/docs)
+[![License MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 <img width="1916" height="956" alt="image" src="https://github.com/user-attachments/assets/ea17a837-bbfc-4c7f-803f-eb49064f352b" />
+
+---
+
+## Demo em producao
+
+Aplicacao publicada em **Netlify** (frontend) + **Render** (API) + **Supabase** (PostgreSQL).
+
+| Servico | URL | Status |
+|---------|-----|--------|
+| **Frontend** | [githubinsightsdashboard.netlify.app](https://githubinsightsdashboard.netlify.app) | [![Website](https://img.shields.io/website?url=https%3A%2F%2Fgithubinsightsdashboard.netlify.app&label=online&up_message=online&down_message=offline&color=00C7B7)](https://githubinsightsdashboard.netlify.app) |
+| **API (NestJS)** | [github-insights-api.onrender.com/api](https://github-insights-api.onrender.com/api) | [![Website](https://img.shields.io/website?url=https%3A%2F%2Fgithub-insights-api.onrender.com%2Fapi%2Fdocs&label=online&up_message=online&down_message=offline&color=46E3B7)](https://github-insights-api.onrender.com/api/docs) |
+| **Swagger** | [github-insights-api.onrender.com/api/docs](https://github-insights-api.onrender.com/api/docs) | Documentacao interativa da API |
+| **Repositorio** | [github.com/pedrowperez/github-insights-dashboard](https://github.com/pedrowperez/github-insights-dashboard) | Codigo-fonte publico |
+
+### Variaveis de ambiente (producao)
+
+| Plataforma | Variavel | Valor |
+|------------|----------|-------|
+| **Netlify** | `VITE_API_URL` | `https://github-insights-api.onrender.com/api` |
+| **Render** | `CLIENT_URL` | `https://githubinsightsdashboard.netlify.app` |
+| **Render** | `DATABASE_URL` | Session pooler do Supabase (porta **5432**, host `*.pooler.supabase.com`) |
+| **Render** | `DB_SSL` | `true` |
+
+> **Vite:** `VITE_*` e embutida **no build**. Ao alterar `VITE_API_URL`, faca **Clear cache and deploy** no Netlify.  
+> **Render (free):** a API pode hibernar apos ~15 min sem uso; a primeira requisicao pode levar **30–60 s**.
+
+### Fluxo
+
+```
+Usuario -> Netlify (SPA) -> Render (API /api) -> Supabase (Postgres)
+                                |
+                                +-> api.github.com
+```
 
 ---
 
@@ -280,60 +319,38 @@ Pipeline em **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.
 
 ## Deploy (Netlify + Render)
 
-O **frontend** (React/Vite) vai para o **Netlify** (site estatico). O **backend** (NestJS) precisa de um servidor Node — o repositorio inclui um blueprint para o **[Render](https://render.com)** (plano free). O banco continua no **Supabase** (ou Neon).
-
-### Visao geral
-
-```
-Usuario -> Netlify (SPA React) -> Render (API NestJS) -> Supabase (PostgreSQL)
-                                      |
-                                      +-> api.github.com
-```
+Instrucoes para replicar o ambiente de producao descrito em [**Demo em producao**](#demo-em-producao). O repositorio inclui [`netlify.toml`](netlify.toml) e [`render.yaml`](render.yaml).
 
 ### 1. Backend no Render
 
 1. Crie conta em [render.com](https://render.com) e conecte o GitHub.
-2. **New > Blueprint** e selecione o repo `pedrowperez/github-insights-dashboard` (usa o arquivo [`render.yaml`](render.yaml)).
+2. **New > Blueprint** e selecione o repo `pedrowperez/github-insights-dashboard`.
 3. Preencha as variaveis solicitadas:
    - **`DATABASE_URL`** — copie a URI **completa** do Supabase (**Session pooler**, porta **5432**).
-     - **Onde copiar (UI atual do Supabase):** abra o **projeto** → botão **Connect** no topo da pagina (nao e dentro de Database > Schema). Escolha **Session pooler** / **Session mode** → porta **5432** → **Copy**.
+     - **Onde copiar (UI atual do Supabase):** abra o **projeto** → botao **Connect** no topo da pagina (nao e dentro de Database > Schema). Escolha **Session pooler** / **Session mode** → porta **5432** → **Copy**.
      - Alternativa: engrenagem **Project Settings** → **Database** → secao **Connection info** (se aparecer no seu plano).
      - **Nao** use conexao direta `db.*.supabase.co` (IPv6 → `ENETUNREACH` no Render).
      - **Nao** monte a URL manualmente — copie do painel (host tipo `aws-0-sa-east-1.pooler.supabase.com`).
      - Sem `?sslmode=require`; mantenha **`DB_SSL=true`** no Render.
-   - **`CLIENT_URL`** — URL do frontend no Netlify (ex.: `https://seu-app.netlify.app`). Pode ajustar depois do passo 2.
+   - **`CLIENT_URL`** — `https://githubinsightsdashboard.netlify.app` (ou a URL do seu site Netlify).
    - **`GITHUB_TOKEN`** (opcional) — aumenta o rate limit da API do GitHub.
-4. Aguarde o deploy e anote a URL publica da API (ex.: `https://github-insights-api.onrender.com`).
-
-Swagger: `https://SUA-API.onrender.com/api/docs`
+4. URL publica da API: **https://github-insights-api.onrender.com**  
+   Swagger: **https://github-insights-api.onrender.com/api/docs**
 
 ### 2. Frontend no Netlify
 
-1. Acesse [app.netlify.com](https://app.netlify.com) > **Add new site** > **Import an existing project** > GitHub.
-2. Selecione o repositorio `github-insights-dashboard`.
-3. O Netlify detecta o [`netlify.toml`](netlify.toml) automaticamente:
-   - **Base directory:** `frontend`
-   - **Build command:** `npm ci && npm run build`
-   - **Publish directory:** `frontend/dist`
-4. Em **Site configuration > Environment variables**, adicione (se nao usar o valor do `netlify.toml`):
+1. [app.netlify.com](https://app.netlify.com) → **Import from Git** → repo `github-insights-dashboard`.
+2. O [`netlify.toml`](netlify.toml) define build e `VITE_API_URL` automaticamente.
+3. Se preferir configurar no painel: **Environment variables** → `VITE_API_URL` = `https://github-insights-api.onrender.com/api`.
+4. Apos alterar variaveis: **Deploys → Trigger deploy → Clear cache and deploy site**.
+5. URL publica: **https://githubinsightsdashboard.netlify.app**
 
-   | Variavel | Valor |
-   |----------|-------|
-   | `VITE_API_URL` | `https://github-insights-api.onrender.com/api` |
+### 3. Checklist pos-deploy
 
-   > **Importante:** variaveis `VITE_*` sao lidas **no momento do build**. Se voce adicionar ou alterar depois, faca **Deploys > Trigger deploy > Clear cache and deploy site**.
-
-5. **Deploy site**.
-
-### 3. Ajuste final de CORS
-
-No painel do **Render**, defina **`CLIENT_URL`** = `https://githubinsightsdashboard.netlify.app` e reinicie o servico se necessario.
-
-### 4. Teste
-
-1. Abra a URL do Netlify.
-2. Cadastre-se e faca login.
-3. Use o dashboard (busca de usuarios/repositorios).
+- [ ] Login e cadastro funcionam em [githubinsightsdashboard.netlify.app](https://githubinsightsdashboard.netlify.app)
+- [ ] Network tab aponta para `github-insights-api.onrender.com/api` (nao `localhost`)
+- [ ] `CLIENT_URL` no Render = URL do Netlify (CORS)
+- [ ] Swagger abre em `/api/docs`
 
 > **Nota:** no plano free do Render, a API pode “dormir” apos inatividade; a primeira requisicao pode levar ~30–60 s.
 

@@ -1,0 +1,21 @@
+# Deploy do frontend (React + Vite) no Netlify.
+# Conecte o repositorio em https://app.netlify.com e use estas configuracoes
+# (ou deixe o Netlify detectar este arquivo automaticamente).
+#
+# IMPORTANTE: defina no painel do Netlify a variavel de ambiente:
+#   VITE_API_URL = https://SUA-API.onrender.com/api
+# (substitua pela URL real do backend — veja README secao "Deploy").
+
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback (React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

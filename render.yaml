@@ -1,0 +1,36 @@
+# Deploy do backend NestJS no Render (par recomendado com Netlify no frontend).
+# https://render.com/docs/blueprint-spec
+#
+# Apos o deploy, copie a URL publica (ex.: https://github-insights-api.onrender.com)
+# e configure:
+#   - Netlify: VITE_API_URL=https://github-insights-api.onrender.com/api
+#   - Render (este servico): CLIENT_URL=https://SEU-SITE.netlify.app
+
+services:
+  - type: web
+    name: github-insights-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/docs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_EXPIRES_DAYS
+        value: "7"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+        optional: true

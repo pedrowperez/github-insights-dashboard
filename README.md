@@ -277,7 +277,59 @@ Pipeline em **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.
 
 ---
 
+## Deploy (Netlify + Render)
 
+O **frontend** (React/Vite) vai para o **Netlify** (site estatico). O **backend** (NestJS) precisa de um servidor Node — o repositorio inclui um blueprint para o **[Render](https://render.com)** (plano free). O banco continua no **Supabase** (ou Neon).
+
+### Visao geral
+
+```
+Usuario -> Netlify (SPA React) -> Render (API NestJS) -> Supabase (PostgreSQL)
+                                      |
+                                      +-> api.github.com
+```
+
+### 1. Backend no Render
+
+1. Crie conta em [render.com](https://render.com) e conecte o GitHub.
+2. **New > Blueprint** e selecione o repo `pedrowperez/github-insights-dashboard` (usa o arquivo [`render.yaml`](render.yaml)).
+3. Preencha as variaveis solicitadas:
+   - **`DATABASE_URL`** — connection string do Supabase (sem `?sslmode=require`; use `DB_SSL=true`).
+   - **`CLIENT_URL`** — URL do frontend no Netlify (ex.: `https://seu-app.netlify.app`). Pode ajustar depois do passo 2.
+   - **`GITHUB_TOKEN`** (opcional) — aumenta o rate limit da API do GitHub.
+4. Aguarde o deploy e anote a URL publica da API (ex.: `https://github-insights-api.onrender.com`).
+
+Swagger: `https://SUA-API.onrender.com/api/docs`
+
+### 2. Frontend no Netlify
+
+1. Acesse [app.netlify.com](https://app.netlify.com) > **Add new site** > **Import an existing project** > GitHub.
+2. Selecione o repositorio `github-insights-dashboard`.
+3. O Netlify detecta o [`netlify.toml`](netlify.toml) automaticamente:
+   - **Base directory:** `frontend`
+   - **Build command:** `npm ci && npm run build`
+   - **Publish directory:** `frontend/dist`
+4. Em **Site configuration > Environment variables**, adicione:
+
+   | Variavel | Valor |
+   |----------|-------|
+   | `VITE_API_URL` | `https://SUA-API.onrender.com/api` |
+
+5. **Deploy site**.
+
+### 3. Ajuste final de CORS
+
+No painel do **Render**, atualize **`CLIENT_URL`** com a URL final do Netlify (ex.: `https://seu-app.netlify.app`) e reinicie o servico se necessario.
+
+### 4. Teste
+
+1. Abra a URL do Netlify.
+2. Cadastre-se e faca login.
+3. Use o dashboard (busca de usuarios/repositorios).
+
+> **Nota:** no plano free do Render, a API pode “dormir” apos inatividade; a primeira requisicao pode levar ~30–60 s.
+
+---
 
 ## Licenca
 MIT

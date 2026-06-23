@@ -295,7 +295,12 @@ Usuario -> Netlify (SPA React) -> Render (API NestJS) -> Supabase (PostgreSQL)
 1. Crie conta em [render.com](https://render.com) e conecte o GitHub.
 2. **New > Blueprint** e selecione o repo `pedrowperez/github-insights-dashboard` (usa o arquivo [`render.yaml`](render.yaml)).
 3. Preencha as variaveis solicitadas:
-   - **`DATABASE_URL`** — connection string do Supabase (sem `?sslmode=require`; use `DB_SSL=true`).
+   - **`DATABASE_URL`** — copie a URI **completa** do Supabase (**Session pooler**, porta **5432**).
+     - **Onde copiar (UI atual do Supabase):** abra o **projeto** → botão **Connect** no topo da pagina (nao e dentro de Database > Schema). Escolha **Session pooler** / **Session mode** → porta **5432** → **Copy**.
+     - Alternativa: engrenagem **Project Settings** → **Database** → secao **Connection info** (se aparecer no seu plano).
+     - **Nao** use conexao direta `db.*.supabase.co` (IPv6 → `ENETUNREACH` no Render).
+     - **Nao** monte a URL manualmente — copie do painel (host tipo `aws-0-sa-east-1.pooler.supabase.com`).
+     - Sem `?sslmode=require`; mantenha **`DB_SSL=true`** no Render.
    - **`CLIENT_URL`** — URL do frontend no Netlify (ex.: `https://seu-app.netlify.app`). Pode ajustar depois do passo 2.
    - **`GITHUB_TOKEN`** (opcional) — aumenta o rate limit da API do GitHub.
 4. Aguarde o deploy e anote a URL publica da API (ex.: `https://github-insights-api.onrender.com`).
@@ -310,17 +315,19 @@ Swagger: `https://SUA-API.onrender.com/api/docs`
    - **Base directory:** `frontend`
    - **Build command:** `npm ci && npm run build`
    - **Publish directory:** `frontend/dist`
-4. Em **Site configuration > Environment variables**, adicione:
+4. Em **Site configuration > Environment variables**, adicione (se nao usar o valor do `netlify.toml`):
 
    | Variavel | Valor |
    |----------|-------|
-   | `VITE_API_URL` | `https://SUA-API.onrender.com/api` |
+   | `VITE_API_URL` | `https://github-insights-api.onrender.com/api` |
+
+   > **Importante:** variaveis `VITE_*` sao lidas **no momento do build**. Se voce adicionar ou alterar depois, faca **Deploys > Trigger deploy > Clear cache and deploy site**.
 
 5. **Deploy site**.
 
 ### 3. Ajuste final de CORS
 
-No painel do **Render**, atualize **`CLIENT_URL`** com a URL final do Netlify (ex.: `https://seu-app.netlify.app`) e reinicie o servico se necessario.
+No painel do **Render**, defina **`CLIENT_URL`** = `https://githubinsightsdashboard.netlify.app` e reinicie o servico se necessario.
 
 ### 4. Teste
 

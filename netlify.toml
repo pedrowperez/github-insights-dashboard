@@ -13,6 +13,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Embutida no build do Vite — altere aqui se a URL da API mudar.
+  VITE_API_URL = "https://github-insights-api.onrender.com/api"
 
 # SPA fallback (React Router)
 [[redirects]]

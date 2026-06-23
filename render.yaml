@@ -27,6 +27,8 @@ services:
         value: "7"
       - key: DATABASE_URL
         sync: false
+        # OBRIGATORIO com Supabase: Session pooler (*.pooler.supabase.com:5432).
+        # Nao use db.*.supabase.co — Render free nao tem IPv6 (erro ENETUNREACH).
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
